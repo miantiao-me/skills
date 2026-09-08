@@ -2,17 +2,16 @@
 
 [English](./README.md)
 
-本仓库是一个可持续增加多个可复用 AI Skills 的集合。每个 Skill 聚焦一项明确任务，并将执行说明与按需加载的参考资料放在独立目录中，以便维护和扩展。
+这里收录了一组面向具体开发任务的 AI Skills。每个目录都包含 Skill 说明，以及完成任务所需的参考资料或工具。
 
 ## Skill 清单
 
-| Skill | 用途 | 来源与许可 |
+| Skill | 能做什么 | 来源与许可 |
 | --- | --- | --- |
-| [clean-code-javascript](./clean-code-javascript/SKILL.md) | 用于现代 JavaScript/TypeScript clean-code review 与 incremental refactoring | 基于 Ryan McDermott 的 [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript) 独立改编；原作采用 MIT License |
+| [apple-music-animated-artwork](./apple-music-animated-artwork/README.zh-CN.md) | 查找 Apple Music 专辑，并将可用的正方形或竖版动态封面下载为 MP4。 | 使用 Apple Catalog API 和未文档化的 Web 行为；媒体权利仍归原权利人。 |
+| [clean-code-javascript](./clean-code-javascript/README.zh-CN.md) | 帮助审查和改进现代 JavaScript 与 TypeScript，避免把局部整理变成大规模重写。 | Ryan McDermott 的 MIT 许可项目 [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript) 的独立非官方改编。 |
 
-`clean-code-javascript` 是独立改编作品，不是 Ryan McDermott 或上游维护者发布的官方 Skill。相关原则已现代化整理进五篇主题参考文档；本仓库不捆绑完整上游 README，可通过来源链接访问；上游来源归属和上游许可证均予以保留。
-
-## 目录约定
+## 目录结构
 
 ```text
 skills/
@@ -21,24 +20,20 @@ skills/
 ├── README.zh-CN.md
 └── <skill-name>/
     ├── SKILL.md
-    ├── LICENSE             # 按来源或许可证要求提供
-    └── references/         # 按需加载的规范或资料
+    ├── README.md
+    ├── README.zh-CN.md
+    ├── LICENSE             # 来源或许可证要求时保留
+    ├── references/         # 按主题拆分的详细说明
+    └── scripts/            # 可选的配套工具
 ```
 
-- 每个 Skill 必须包含 `SKILL.md`。
-- `SKILL.md` 的 YAML frontmatter 仅使用 `name` 和 `description`。
-- 仅保留 Skill 实际需要的脚本、参考资料和资源，不保留示例占位内容。
-- 保留第三方许可证要求的版权与许可声明。
-- 只有在许可证允许且确有追溯需要时才归档第三方原文，并清楚标明改编关系。
+## 贡献
 
-## 添加新 Skill
-
-1. 使用标准初始化工具创建 `<skill-name>/` 目录。
-2. 保持 `SKILL.md` 精炼；将详细资料放入 `references/`，并说明读取时机。
-3. 删除生成的示例和没有实际用途的目录。
-4. 使用第三方内容时，保留其许可证要求的所有版权与许可声明。只有在许可证允许且确有追溯需要时才归档原文，并清楚标明改编关系和来源 URL。
-5. 将新 Skill 加入上方清单，并使用项目现有检查方式验证其结构。
+- 每个 Skill 包含一份简洁的 `SKILL.md`，并提供彼此互链的中英文 README。
+- YAML frontmatter 只放 `name` 和 `description`；较长的说明移到 `references/`。
+- 只保留实际使用的文件，同时保留必要的来源、归属和许可信息。
+- 新增或重命名 Skill 时，同步更新两份根索引，并检查双语结构和相对链接。
 
 ## 许可证
 
-本项目的代码和内容按仓库根目录的 [MIT License](./LICENSE) 发布。第三方内容仍受各自许可证约束。
+仓库原创内容采用 [MIT License](./LICENSE)。第三方代码、内容和媒体仍受各自许可证与权利约束。

@@ -2,17 +2,16 @@
 
 [简体中文](./README.zh-CN.md)
 
-This repository is a collection designed to grow sustainably with multiple reusable AI Skills. Each Skill focuses on a defined task and keeps its instructions and on-demand references in a self-contained directory for straightforward maintenance and expansion.
+Reusable AI Skills for focused development tasks. Each directory contains the Skill instructions and any references or tools it needs.
 
 ## Skills
 
-| Skill | Purpose | Source and license |
+| Skill | What it does | Source and license |
 | --- | --- | --- |
-| [clean-code-javascript](./clean-code-javascript/SKILL.md) | Modern JavaScript/TypeScript clean-code review and incremental refactoring | Independently adapted from Ryan McDermott's [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript), originally released under the MIT License |
+| [apple-music-animated-artwork](./apple-music-animated-artwork/README.md) | Finds Apple Music albums and downloads available square or tall animated artwork as MP4. | Uses Apple's Catalog API and undocumented Web behavior; media rights remain with their owners. |
+| [clean-code-javascript](./clean-code-javascript/README.md) | Helps review and improve modern JavaScript and TypeScript without turning a focused cleanup into a rewrite. | An independent, unofficial adaptation of Ryan McDermott's MIT-licensed [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript). |
 
-`clean-code-javascript` is an independent adaptation, not an official Skill from Ryan McDermott or the upstream maintainers. Relevant principles have been modernized and organized into five topical reference documents. The complete upstream README is not bundled and remains available through the source link; upstream attribution and the upstream license are retained.
-
-## Directory Conventions
+## Repository layout
 
 ```text
 skills/
@@ -21,24 +20,20 @@ skills/
 ├── README.zh-CN.md
 └── <skill-name>/
     ├── SKILL.md
-    ├── LICENSE             # Included when required by its source or license
-    └── references/         # Specifications or resources loaded on demand
+    ├── README.md
+    ├── README.zh-CN.md
+    ├── LICENSE             # Included when a source or license requires it
+    ├── references/         # Longer topic guides
+    └── scripts/            # Optional supporting tools
 ```
 
-- Every Skill must include `SKILL.md`.
-- The YAML frontmatter in `SKILL.md` uses only `name` and `description`.
-- Keep only scripts, references, and assets that the Skill actually needs; do not retain placeholder examples.
-- Keep copyright and license notices required by third-party licenses.
-- Archive original third-party text only when its license permits it and a genuine traceability need exists, and clearly identify the adaptation relationship.
+## Contributing
 
-## Adding a New Skill
-
-1. Create a `<skill-name>/` directory using the standard initialization tooling.
-2. Keep `SKILL.md` concise; place detailed material in `references/` and state when it should be read.
-3. Remove generated examples and directories that have no practical use.
-4. For third-party content, retain all copyright and license notices required by its license. Archive original text only when the license permits it and traceability genuinely requires it, and clearly mark the adaptation and source URL.
-5. Add the Skill to the list above and validate its structure using the project's existing checks.
+- Give every Skill a concise `SKILL.md` and linked English and Chinese READMEs.
+- Keep YAML frontmatter to `name` and `description`; move longer guidance into `references/`.
+- Include only files the Skill uses. Keep required attribution, source links, and license notices.
+- Add or rename a Skill in both root indexes, then check the bilingual structure and relative links.
 
 ## License
 
-The project's code and content are released under the [MIT License](./LICENSE) in the root of this repository. Third-party content remains subject to its respective licenses.
+Original material in this repository is available under the [MIT License](./LICENSE). Third-party code, content, and media keep their own licenses and rights.
