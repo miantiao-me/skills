@@ -1,29 +1,28 @@
 # Clean Code JavaScript
 
-[简体中文](./README.zh-CN.md) · [Skill index](../README.md)
+[简体中文](./README.zh-CN.md) · [Skill Index](../README.md)
 
-This Skill helps review and gradually improve modern JavaScript and TypeScript. It covers correctness, type safety, readable code, module design, side effects, async work, error handling, and tests without assuming that every codebase needs the same solution.
+Engineering guide and code review heuristics for modern JavaScript and TypeScript, emphasizing readable code, type safety, and behavior-preserving refactoring over rigid slogans.
 
-## When to Use
+## Installation
 
-It is useful for code reviews, maintainability work, behavior-preserving refactors, and focused modernization. The guidance is a set of context-sensitive heuristics, not a scorecard: runtime support, public APIs, existing conventions, and current behavior take priority over stylistic slogans.
+```bash
+# Install into AI agent (add -g for global)
+npx skills add miantiao-me/skills --skill clean-code-javascript
+```
 
-For an implementation task, start with the smallest change that solves the concrete problem. For a review, use the same material to explain findings without requiring a rewrite.
+This skill is a reference guide with **no CLI executables or scripts**. Once installed, AI agents load [`SKILL.md`](./SKILL.md) and reference topic guides during code review and refactoring. Developers can also read the guides directly. Zero runtime dependencies; no `npm install` needed.
 
-## Content Guide
+## Topic Guides
 
-The detailed guidance is split into five references. Open the ones that match the work at hand; use all five for a broad review.
+Read the guide relevant to your task:
 
-- [Core JavaScript](./references/core-javascript.md): naming, functions, ownership, mutation, side effects, and runtime constraints.
-- [TypeScript](./references/typescript.md): strictness, runtime validation, narrowing, state models, public types, and narrow escape hatches.
-- [Design and Modules](./references/design-and-modules.md): objects, encapsulation, composition, classes, SOLID, dependencies, modules, and reuse.
-- [Async and Errors](./references/async-and-errors.md): promises, concurrency, cancellation, asynchronous iteration, and error models.
-- [Testing and Refactoring](./references/testing-and-refactoring.md): behavioral tests, comments, automation, dead code, and incremental validation.
+- [Core JavaScript](./references/core-javascript.md): Naming, functions, immutability, side-effect isolation.
+- [TypeScript Design](./references/typescript.md): Strictness, type narrowing, state modeling, safe escape hatches.
+- [Design and Modules](./references/design-and-modules.md): Encapsulation, composition over inheritance, SOLID, modules.
+- [Async and Errors](./references/async-and-errors.md): Promises, concurrency, cancellation, error models.
+- [Testing and Refactoring](./references/testing-and-refactoring.md): Behavioral testing, purposeful comments, incremental validation.
 
-[`SKILL.md`](./SKILL.md) contains the working instructions and explains when to use each reference.
+## Source and License
 
-## Source, Adaptation, and License
-
-This is an independent modern adaptation of Ryan McDermott's [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript), not an official Skill from Ryan McDermott or its upstream maintainers. The original ideas have been updated for current JavaScript and TypeScript and reorganized into the five references above. The complete upstream README is not copied here; it remains available from the source link.
-
-The upstream project uses the MIT License, and its copyright and license notice are preserved in this directory's [LICENSE](./LICENSE). New material from this repository is covered by the root [MIT License](../LICENSE). Third-party material keeps its original license.
+An independent adaptation of Ryan McDermott's MIT-licensed [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript), updated for modern JS/TS. Preserves the original [LICENSE](./LICENSE). New content is covered by the root [MIT License](../LICENSE).
