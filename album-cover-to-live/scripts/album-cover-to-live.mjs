@@ -119,10 +119,60 @@ function base(envName, fallback) {
   }
   return url.href.replace(/\/$/, '');
 }
-async function http(url, { json = false, limit = MAX_IMAGE, ...options } = {}) {
+function retryAfterSeconds(value) {
+  if (typeof value !== 'string' || value.length > 64) return undefined;
+  if (/^\d{1,10}$/.test(value)) {
+    const seconds = Number(value);
+    return seconds <= 2147483647 ? seconds : undefined;
+  }
+  if (!/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(value)) return undefined;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime()) || date.toUTCString() !== value) return undefined;
+  const seconds = Math.max(0, Math.ceil((date.getTime() - Date.now()) / 1000));
+  return seconds <= 2147483647 ? seconds : undefined;
+}
+function diagnosticHost(value) {
+  try {
+    const host = new URL(value).hostname;
+    if (host.length <= 253 && /^[a-z0-9.\-\[\]:]+$/i.test(host)) return host;
+  } catch {}
+  return '(unavailable)';
+}
+function directoryFailure(error, context) {
+  const safeReasons = new Map([
+    ['Cover must be square, 256..5760 pixels.', 'cover_not_square_or_out_of_range'],
+    ['Cover must be JPEG, PNG or WebP, at most 30MB.', 'cover_format_or_size_invalid'],
+    ['ffprobe failed; ensure media is valid and ffprobe is installed.', 'cover_probe_failed'],
+    ['HTTP connection failed or timed out.', 'connection_failed_or_timeout'],
+    ['HTTP response interrupted or timed out.', 'response_interrupted_or_timeout'],
+    ['Download exceeds size limit.', 'download_size_limit'],
+    ['Server returned invalid JSON.', 'invalid_json'],
+    ['Invalid or excessive redirects.', 'redirect_rejected'],
+  ]);
+  const reason = error.status ? 'http_error' : safeReasons.get(error.message) ||
+    (error instanceof Failure && error.message.startsWith('Network target ') ? 'network_target_rejected' : 'request_or_validation_failed');
+  const diagnostic = { stage:context.stage, host:context.host, reason,
+    ...(error.status ? { status:error.status } : {}),
+    ...(error.retryAfterSeconds !== undefined ? { retry_after_seconds:error.retryAfterSeconds } : {}) };
+  const failure = new Failure(`${context.stage} (${context.host}): ${error.status ? `HTTP ${error.status}` : reason}.`, error instanceof Failure ? error.code : 1);
+  failure.status = error.status;
+  failure.diagnostics = [diagnostic];
+  return failure;
+}
+async function directoryRequest(url, stage, { image = false, ...options } = {}) {
+  const context = { stage, host:diagnosticHost(url) };
+  try {
+    const result = await http(url, { ...options, diagnosticContext:context });
+    return image ? { bytes:result, url, ...await imageInfo(result) } : result;
+  } catch (error) {
+    throw directoryFailure(error, context);
+  }
+}
+async function http(url, { json = false, limit = MAX_IMAGE, diagnosticContext, ...options } = {}) {
   let response;
   const origin = new URL(url).origin;
   for (let hop = 0; ; hop++) {
+    if (diagnosticContext) diagnosticContext.host = diagnosticHost(url);
     const { target, address } = await safeURL(url);
     if (options.headers?.Authorization && target.origin !== origin) fail('Bearer cross-origin redirect rejected.');
     try {
@@ -166,6 +216,7 @@ async function http(url, { json = false, limit = MAX_IMAGE, ...options } = {}) {
     await response.body?.cancel();
     const error = new Failure(`HTTP ${response.status}: ${({401:'unauthorized',403:'forbidden',404:'not found',429:'rate limited; retry later',503:'service unavailable; retry later'})[response.status] || 'request failed'}.`);
     error.status = response.status;
+    if (diagnosticContext) error.retryAfterSeconds = retryAfterSeconds(response.headers.get('retry-after'));
     throw error;
   }
   const chunks = [];
@@ -303,10 +354,10 @@ async function imageInfo(bytes) {
   });
 }
 let lastMusicBrainzRequestAt = 0;
-async function mb(endpoint, contact) {
+async function mb(endpoint, contact, stage) {
   await sleep(Math.max(0, 1050 - (Date.now() - lastMusicBrainzRequestAt)));
   lastMusicBrainzRequestAt = Date.now();
-  return http(`${base('MUSICBRAINZ_BASE_URL', 'https://musicbrainz.org')}/ws/2/${endpoint}`, { json: true, headers: { 'User-Agent': `album-cover-to-live/1.0 (${contact})`, Accept: 'application/json' } });
+  return directoryRequest(`${base('MUSICBRAINZ_BASE_URL', 'https://musicbrainz.org')}/ws/2/${endpoint}`, stage, { json: true, headers: { 'User-Agent': `album-cover-to-live/1.0 (${contact})`, Accept: 'application/json' } });
 }
 function candidate(r, o) {
   const artists = (r['artist-credit'] || []).map(a => a.name || a.artist?.name || '').join(' ');
@@ -314,25 +365,35 @@ function candidate(r, o) {
   const album = r['release-group']?.['primary-type'] === 'Album';
   const compilation = (r['release-group']?.['secondary-types'] || []).includes('Compilation');
   const official = r.status === 'Official';
-  return { id: r.id, title: r.title, artist: artists, status: r.status, release_group_id: r['release-group']?.id, exact, high_confidence: exact && official && album && !compilation, score: Number(exact) * 100 + Number(official) * 20 + Number(album) * 10 - Number(compilation || r.status === 'Bootleg') * 100 };
+  return { id: r.id, title: r.title, artist: artists, status: r.status, release_group_id: r['release-group']?.id,
+    date: r.date ?? null, country: r.country ?? null, disambiguation: r.disambiguation ?? null,
+    label_info: (r['label-info'] || []).map(info => ({ label_id: info.label?.id ?? null, label_name: info.label?.name ?? null, catalog_number: info['catalog-number'] ?? null })),
+    exact, high_confidence: exact && official && album && !compilation, score: Number(exact) * 100 + Number(official) * 20 + Number(album) * 10 - Number(compilation || r.status === 'Bootleg') * 100 };
 }
 async function caaCover(c, explicit = false) {
   const root = base('CAA_BASE_URL', 'https://coverartarchive.org');
+  const reasons = [];
+  const remember = error => {
+    if (reasons.length < 8) reasons.push(...(error.diagnostics || []).slice(0, 8 - reasons.length));
+  };
   const scopes = [['release-group', c.release_group_id], ['release', c.id]];
   for (const [kind, id] of explicit ? scopes.reverse() : scopes) {
     if (!isMBID(id)) continue;
     const endpoint = `${root}/${kind}/${id}`;
-    try { const url = `${endpoint}/front-1200`; const bytes = await http(url); return { bytes, url, coverScope:kind, ...await imageInfo(bytes) }; }
-    catch (error) { if (error.status && error.status !== 404) throw error; }
+    try { return { ...await directoryRequest(`${endpoint}/front-1200`, `caa.${kind}.front`, { image:true }), coverScope:kind }; }
+    catch (error) { if (error.status && error.status !== 404) throw error; remember(error); }
     let metadata;
-    try { metadata = await http(endpoint, { json: true }); } catch (error) { if (error.status === 404) continue; throw error; }
+    try { metadata = await directoryRequest(endpoint, `caa.${kind}.metadata`, { json: true }); } catch (error) { if (error.status === 404) { remember(error); continue; } throw error; }
     for (const image of metadata.images || []) if (image.approved && image.front) {
       for (const url of [...new Set([image.thumbnails?.['1200'], image.image].filter(Boolean))]) {
-        try { const bytes = await http(url); return { bytes, url, coverScope:kind, ...await imageInfo(bytes) }; } catch (error) { if (error.status && error.status !== 404) throw error; }
+        const stage = url === image.thumbnails?.['1200'] ? 'thumbnail' : 'original';
+        try { return { ...await directoryRequest(url, `caa.${kind}.${stage}`, { image:true }), coverScope:kind }; } catch (error) { if (error.status && error.status !== 404) throw error; remember(error); }
       }
     }
   }
-  fail('No valid CAA front cover found.');
+  const error = new Failure('No valid CAA front cover found.');
+  error.diagnostics = reasons;
+  throw error;
 }
 async function resolveCover(o) {
   const contact = o.contact || process.env.MUSICBRAINZ_CONTACT;
@@ -342,11 +403,11 @@ async function resolveCover(o) {
   await absent(['cover.jpg','cover.png','cover.webp','source.json'].map(f => path.join(dir, f)), o.force);
   let selected;
   if (o['release-id']) {
-    const release = await mb(`release/${o['release-id']}?inc=artist-credits+release-groups&fmt=json`, contact);
+    const release = await mb(`release/${o['release-id']}?inc=artist-credits+release-groups&fmt=json`, contact, 'musicbrainz.release');
     selected = candidate(release, o);
   } else {
     const escape = s => s.replace(/[+\-&|!(){}\[\]^"~*?:\\/]/g, '\\$&');
-    const result = await mb(`release/?query=${encodeURIComponent(`artist:"${escape(o.artist)}" AND release:"${escape(o.album)}"`)}&fmt=json&limit=100`, contact);
+    const result = await mb(`release/?query=${encodeURIComponent(`artist:"${escape(o.artist)}" AND release:"${escape(o.album)}"`)}&fmt=json&limit=100`, contact, 'musicbrainz.search');
     if (!Array.isArray(result.releases)) fail('Invalid MusicBrainz response.');
     const candidates = result.releases.map(r => candidate(r, o)).sort((a,b) => b.score - a.score);
     const highConfidence = candidates.filter(candidate => candidate.high_confidence);
@@ -458,7 +519,8 @@ async function plan(o, brief) {
     basis: b?.evidence_basis || (b ? 'user_supplied_brief' : 'visible_cover'),
     status: 'needs_review',
     structure: b?.structure || 'unknown',
-    carrier: 'unknown',
+    carrier: b?.semantic_anchor?.visible_carrier || 'unknown',
+    carrier_source: b?.semantic_anchor?.visible_carrier ? 'brief' : 'unknown',
     analysis_performed: false,
     input: path.resolve(o.input),
     image,
@@ -601,7 +663,7 @@ async function generate(o) {
     await publish(path.join(dir,'live-cover.mp4'), await fs.readFile(silent), o.force);
   });
   const result = await review({ input:path.join(dir,'live-cover.mp4'), 'output-dir':dir, 'expected-duration':o.duration, force:o.force });
-  return { status: result.status, task_id:id, video:path.join(dir,'live-cover.mp4'), review:result };
+  return { status: result.status, generation_status:'succeeded', review_status:result.status, task_id:id, video:path.join(dir,'live-cover.mp4'), review:result };
 }
 const knownTasks = [];
 let options = {};
@@ -629,7 +691,7 @@ try {
   }
 } catch (error) {
   const message = (error instanceof Failure ? error.message : 'Local operation failed; check paths, permissions and available disk space.') + (knownTasks.length ? ` Known task IDs: ${knownTasks.map(t => t.taskId).join(', ')}. Do not blindly resubmit (不要盲目重新提交).` : '');
-  const result = { error:message, ...(error.candidates ? { candidates:error.candidates } : {}) };
-  process.stderr.write(options.json ? jsonText(result) : `${message}\n${error.candidates ? jsonText(error.candidates) : ''}`);
+  const result = { error:message, ...(error.candidates ? { candidates:error.candidates } : {}), ...(error.diagnostics ? { diagnostics:error.diagnostics } : {}) };
+  process.stderr.write(options.json ? jsonText(result) : `${message}\n${error.candidates ? jsonText(error.candidates) : ''}${error.diagnostics ? jsonText(error.diagnostics) : ''}`);
   process.exitCode = error instanceof Failure ? error.code : 1;
 }

@@ -43,6 +43,8 @@ help
 
 ## CLI Brief 投影 Schema
 
+计划摘要的 `carrier` 透传已校验 brief 的 `semantic_anchor.visible_carrier`，并标记 `carrier_source: "brief"`；未提供该载体时两者均为 `"unknown"`。`analysis_performed: false` 专指 CLI 自身未进行视觉分析，不否认外部 brief 的观察依据；此摘要不改变提示词、预算或 brief。
+
 向 `--brief` 传入的 JSON 文件是 [Motion Design Guide](./motion-design-guide.md) 中通用设计方案在命令行工具中的受限投影。CLI 严格校验字段有效性，拒绝未知顶层字段，所有字符串经 trim 处理后不得为空。
 
 ### 字段定义
@@ -115,6 +117,18 @@ help
 
 网络默认仅允许公网 HTTPS。请求遵循最多 5 次逐跳重定向验证，Bearer 凭据禁止跨源。单进程内 MusicBrainz 请求间隔至少 1050ms。
 
+### 凭据准备与区域确认
+
+付费披露前询问凭据所属平台，核对 `region` 与实际 API origin：国内平台使用 `cn` / `https://api.minimax.cn`，国际平台使用 `global` / `https://api.minimax.io`。核对环境中凭据是否已配置时只返回存在且非空的布尔结果，不输出秘密值。HTTP 401 不构成自动换区、换凭据或重新提交的许可；改变接收区域须重新披露并获得授权。
+
+CLI 不自动加载 `.env`，也不提供 `.env` 参数。只有用户明确指定凭据文件路径后，才可在运行时用受控解析器读取该文件，仅提取 `MINIMAX_API_KEY` 并通过子进程环境传递；不得 `source`、打印文件或密钥、整包导入其他键、把密钥写入参数或临时文件。若使用 Node.js `util.parseEnv`，先确认运行时支持此 API；CLI 的 Node.js 20+ 要求不代表所有 20.x 都支持。此准备流程不改变 CLI 内部顺序：非付费路径不读取 key，付费路径先校验上传用同一 Buffer 的图片与哈希，再读取 key。
+
+### 目录请求诊断
+
+目录请求失败时，JSON 保留 `error` / `candidates`，可额外返回 `diagnostics`；普通文本也显示诊断。阶段区分 `musicbrainz.search`、`musicbrainz.release` 和 `caa.<release|release-group>.<front|metadata|thumbnail|original>`。诊断仅含静态阶段、安全主机名、安全原因及可用的 HTTP `status`，不输出完整 URL、查询参数、重定向 Location、原始响应正文或任意 header 值。主机名为失败请求所在跳的主机（无效地址则不可用），不代表已确定服务商或代理等根因归属。
+
+`retry_after_seconds` 仅在 Retry-After 严格符合非负整秒或标准 IMF-fixdate HTTP-date 时提供；日期转换为相对本地时钟的建议秒数（过去时间为 0）。超过 64 字符、非法日期或转换结果超过 2147483647 秒均忽略。该字段仅供人工参考，**不 sleep、不自动重试、不新增请求**。CAA 无有效封面时最多保留前 8 条失败原因（可能省略后续原因）；方形/尺寸、格式/大小、媒体探测与网络目标限制使用安全原因码，不透传未知错误或 ffprobe stderr。503 仍立即失败，不据此回退 Deezer；既有 MiniMax 提交与轮询行为不变。
+
 ---
 
 ## Context IR 与生成细节
@@ -127,6 +141,10 @@ help
 ---
 
 ## 输出产物规范
+
+MusicBrainz 候选（包括 `source.json.match`）保留当前响应已有的 `date`、`country`、`disambiguation`，缺失时为 `null`；`label_info` 为数组，每项含 `label_id`、`label_name`、`catalog_number`，缺失子字段为 `null`，没有 label 信息则为 `[]`。这些只是发行选择提示，不补发请求，不修改分数、排序、自动选择或简繁体精确匹配规则。
+
+成功完成生成及内置 review 后，`generate` 的最终 JSON 增加 `generation_status: "succeeded"` 和 `review_status`（等于 `review.status`），原有 `status` 与退出码保持不变。技术通过时 `review_status` / `status` 为 `"needs_review"`，退出码 0；技术失败时为 `"fail"`，退出码 4，并不表示远端生成失败，也不是重复付费的理由。后续下载或 review 执行异常时可能只有错误输出，应结合任务回执判断远端状态。Dry-run 仍返回 `status: "planned_only"`，不包含上述两个生成结果字段，不代表已生成视频。
 
 每次运行根据子命令与参数写入对应文件：
 
@@ -144,6 +162,8 @@ help
 ## 复核（Review）与退出码
 
 `review` 命令采样 12 帧生成 4×3 接触表，输出 `review.json`。自动化检测仅覆盖视频流存在、无音轨、方形尺寸、正时长与预期时长容差。视觉身份、文字清晰度、几何形变与循环连贯性在技术输出中恒为 `needs_review`，`accepted` 恒为 `false`。技术通过不等于人工视觉终审；采样与 SSIM 指标无法单独证明无缝循环。
+
+单独复核必须携带已确认的 `--expected-duration`，已有内置 review 时无需重复。交付时分别报告远端任务状态、技术检查、视觉复核和用户反馈；用户满意不能覆盖时长等硬性失败，不自动重新生成或裁剪。
 
 | 退出码 | 含义 | 处理指引 |
 | --- | --- | --- |

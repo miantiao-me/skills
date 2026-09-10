@@ -12,6 +12,7 @@ description: 将专辑封面规划为克制的动态封面，并在明确付费�
 1. **准备与参数核对**：
    - 执行前先运行 `node scripts/album-cover-to-live.mjs help`；调用 CLI 各子命令前阅读 [cli-reference.md](./references/cli-reference.md)。
    - 发起查询前必须阅读 [providers-and-rights.md](./references/providers-and-rights.md)，确认 MusicBrainz 限流、Deezer 显式开启规则与数据来源权利边界。
+   - 复用已确认的 release 与参数，集中一次询问缺失信息；不省略实际封面确认与完整付费确认。
 2. **解析封面**：
    - 运行 `resolve --artist <name> --album <title> --output-dir <dir>`（未设环境变量时必传 `--contact`）。
    - 若返回多条候选或置信度不足（退出码 3），展示候选项供用户明确选择 release ID，不主观猜测。
@@ -25,15 +26,17 @@ description: 将专辑封面规划为克制的动态封面，并在明确付费�
    - 运行 `plan --input <cover> --brief <brief.json> --output <prompt.txt> --json` 验证生成提示词。
    - 运行 `generate ... --dry-run` 预演流程；注意 dry-run 仍会联网重新解析元数据并下载封面，但不调用远程 H3 模型。
 6. **付费披露与显式确认**：
-   - 必须向用户完整披露：确认的封面与来源、Brief 摘要、完整 Prompt 文本、生成参数（模型 MiniMax-H3、时长、分辨率、region、context-ir）、上传内容及费用不确定性，获得用户明确同意。
+   - 披露前核对用户凭据所属平台与 `cn` / `global`、实际 API origin，并仅检查凭据是否已配置，不展示秘密值。CLI 不自动加载 `.env`；仅在用户明确给出文件路径后受控解析指定键，详见 CLI Reference 的凭据准备规则。
+   - 必须向用户完整披露：确认的封面与来源、Brief 摘要、完整 Prompt 文本、生成参数（模型 MiniMax-H3、时长、分辨率、region、实际 API origin、context-ir）、上传内容及费用不确定性，获得用户明确同意。
    - 从已确认的 Plan 或 source 中提取封面的 64 位十六进制 SHA-256（`expected_cover_sha256`）。
 7. **执行生成（Generate）**：
    - 必须使用全新的独立输出目录，避免覆盖前序产物。
    - 传入 `--confirm-paid-generation` 与 `--expected-cover-sha256 <64hex>` 执行生成。
-   - 脚本对上传前的同一 Buffer 强校验尺寸与哈希，不匹配立即中断。严禁自动静默重试任何付费任务。
+   - 脚本对上传前的同一 Buffer 强校验尺寸与哈希，通过后才读取 key，不匹配立即中断。严禁自动静默重试任何付费任务；401 不授权自动切区重试。
 8. **技术与视觉复核（Review）**：
-   - 运行 `review --input <video.mp4> --output-dir <dir>`。
+   - 优先读取内置 review；需要单独复核时运行 `review --input <video.mp4> --output-dir <new-dir> --expected-duration <已确认秒数>`。
    - 结合采样接触表与人工播放完整视频，依据 [motion-design-guide.md](./references/motion-design-guide.md) 复核门禁给出验收结论。自动化技术通过不等于人工视觉终审。
+   - 分开报告远端生成、技术复核、视觉复核与用户反馈。生成成功但技术失败仍为退出码 4；用户满意不覆盖硬性失败，不据此重复付费生成或自动裁剪。
 
 ## 网络与安全策略
 

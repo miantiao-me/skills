@@ -18,6 +18,7 @@
 - 必要时读取对应 `GET /release-group/<mbid>` 或 `GET /release/<mbid>` JSON，选择 `approved && front`，依次尝试 `thumbnails["1200"]` 和 `image`。
 - 跟随 HTTP redirect（可能转向图片托管服务）；`source.json` 保存请求来源 URL，不保证是最终 redirect 目标。CAA/图片请求没有脚本自定义 MusicBrainz User-Agent 或共享 1req/s 限流，应保守串行使用。
 - 404 可继续尝试元数据、其他图像或下一发行层级；无有效图像则失败。503 表示服务不可用，不是“无封面”，不会据此切换 Deezer；稍后人工重试。HTTP 429/503 无自动退避重试。图片无效或非 HTTP 状态错误在部分候选分支可继续尝试，不能把它们都解释成 404。
+- 错误诊断区分 MusicBrainz 搜索/指定发行查询及 CAA 各层级的 front、metadata、thumbnail、original 阶段，保留 HTTP 状态和严格解析后的 Retry-After 建议秒数；不自动等待、重试或增加诊断请求。诊断只展示静态阶段、安全主机名与安全原因，不包含签名 URL、原始响应或任意 header 值。CAA 最终失败最多保留前 8 条原因；阶段和主机仅说明失败位置，不证明提供商、代理或其它网络环节的根因。字段与解析边界见 [CLI Reference](./cli-reference.md)。
 - 接受 JPEG/PNG/WebP，最多 30 MiB，正方形 256–5760 像素；不自动裁剪。
 - [CAA API](https://musicbrainz.org/doc/Cover_Art_Archive/API)、[CAA 说明](https://musicbrainz.org/doc/Cover_Art_Archive)：可下载不等于取得复制、改编、模型上传或商业发行许可。使用或改编封面需要取得相应授权。
 
