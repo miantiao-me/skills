@@ -10,6 +10,7 @@
 | --- | --- |
 | [album-cover-to-live](./album-cover-to-live/README.zh-CN.md) | 检索专辑封面、规划运动 Brief，确认后通过 MiniMax H3 生成静音视频。 |
 | [apple-music-animated-artwork](./apple-music-animated-artwork/README.zh-CN.md) | 检索 Apple Music 专辑并下载官方动态封面为 MP4 视频。 |
+| [chinese-writing](./chinese-writing/README.zh-CN.md) | 清晰、克制且无 AI 味的现代简体中文写作与审校准则。 |
 | [clean-code-javascript](./clean-code-javascript/README.zh-CN.md) | 现代 JavaScript 与 TypeScript 的代码审查准则与可维护性重构参考。 |
 
 ## 技能安装
@@ -29,8 +30,8 @@ npx skills add miantiao-me/skills --skill '*'
 ## 使用方式
 
 - **配合 AI Agent**：安装后在对话中直接描述任务或提及技能名称。
-- **终端直接运行**：工具类技能需进入对应技能子目录下运行。`clean-code-javascript` 为工程参考规范，无 CLI 可执行脚本。
+- **终端直接运行**：工具类技能需进入对应技能子目录下运行。`chinese-writing` 与 `clean-code-javascript` 为工程与写作参考规范，无 CLI 可执行脚本。
 
 ## 许可证
 
-本仓库原创代码与文档采用 [MIT 许可证](./LICENSE)。`clean-code-javascript` 改编自 Ryan McDermott 的 MIT 开源项目 [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript)（保留其原 [LICENSE](./clean-code-javascript/LICENSE)）。
+本仓库原创代码与文档采用 [MIT 许可证](./LICENSE)。`clean-code-javascript` 改编自 Ryan McDermott 的 MIT 开源项目 [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript)（保留其原 [LICENSE](./clean-code-javascript/LICENSE)）。`chinese-writing` 采用 MIT 许可证（见 [LICENSE](./chinese-writing/LICENSE)）。

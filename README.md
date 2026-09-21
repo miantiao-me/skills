@@ -10,6 +10,7 @@ Reusable AI Skills and developer tools for real-world engineering workflows. Eac
 | --- | --- |
 | [album-cover-to-live](./album-cover-to-live/README.md) | Resolves album art, plans motion briefs, and generates silent video via MiniMax H3 after explicit confirmation. |
 | [apple-music-animated-artwork](./apple-music-animated-artwork/README.md) | Searches Apple Music albums and downloads official animated artwork as MP4 video. |
+| [chinese-writing](./chinese-writing/README.md) | Writing and copyediting guidelines for crafting clean, restrained, modern Simplified Chinese. |
 | [clean-code-javascript](./clean-code-javascript/README.md) | Code review heuristics and maintainability guide for modern JavaScript and TypeScript. |
 
 ## Installation
@@ -29,8 +30,8 @@ Add `-g` (or `--global`) to install globally to user-level agent configs instead
 ## Usage
 
 - **AI Agents**: Once installed, invoke skills by name or describe your task in conversation.
-- **Direct Terminal**: For tool-based skills (`album-cover-to-live`, `apple-music-animated-artwork`), run commands directly from the skill's directory. `clean-code-javascript` is a reference guide without CLI executables.
+- **Direct Terminal**: For tool-based skills (`album-cover-to-live`, `apple-music-animated-artwork`), run commands directly from the skill's directory. `chinese-writing` and `clean-code-javascript` are reference guides without CLI executables.
 
 ## License
 
-Original code and documentation in this repository are available under the [MIT License](./LICENSE). `clean-code-javascript` is adapted from Ryan McDermott's MIT-licensed [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript) (see [LICENSE](./clean-code-javascript/LICENSE)).
+Original code and documentation in this repository are available under the [MIT License](./LICENSE). `clean-code-javascript` is adapted from Ryan McDermott's MIT-licensed [clean-code-javascript](https://github.com/ryanmcdermott/clean-code-javascript) (see [LICENSE](./clean-code-javascript/LICENSE)). `chinese-writing` is distributed under the MIT License (see [LICENSE](./chinese-writing/LICENSE)).
